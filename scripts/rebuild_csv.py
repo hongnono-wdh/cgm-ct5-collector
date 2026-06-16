@@ -4,8 +4,8 @@
 import sys
 import csv
 import datetime
+from _config import CIPHER, now  # cipher / 北京时间来自 _config(环境变量 CT5_* 或 config.local.json)
 
-CIPHER = 124
 CALIB = float(sys.argv[1]) if len(sys.argv) > 1 else 1.327
 INTERVAL = int(sys.argv[2]) if len(sys.argv) > 2 else 180
 
@@ -56,13 +56,13 @@ def main():
     if not valid:
         print("无有效数据"); return
     max_id = max(valid)
-    now = datetime.datetime.now()
+    anchor = now()   # 北京时间锚点
     with open("glucose_log.csv", "w", newline="") as f:
         w = csv.writer(f)
         w.writerow(["time", "glucoseId", "glu_mmol", "glu_mg", "Ib", "Iw", "T", "trend"])
         for gid in valid:
             r = recs[gid]
-            ts = now - datetime.timedelta(seconds=(max_id - gid) * INTERVAL)
+            ts = anchor - datetime.timedelta(seconds=(max_id - gid) * INTERVAL)
             cal_mmol = round(r[1] * CALIB / 18, 1)
             cal_mg = round(r[1] * CALIB)
             w.writerow([ts.isoformat(timespec="seconds"), gid, cal_mmol, cal_mg, r[2], r[3], r[4], r[5]])

@@ -11,7 +11,7 @@ from bleak import BleakClient, BleakScanner
 WRITE = "00001002-1212-efde-1523-785feabcd123"
 NOTIFY = "00001001-1212-efde-1523-785feabcd123"
 CSV_PATH = "glucose_log.csv"   # 相对当前工作目录(在项目根目录运行)
-from _config import PHONE, CIPHER, CALIB  # 隐私/标定来自环境变量 CT5_* 或 config.local.json
+from _config import PHONE, CIPHER, CALIB, now  # 隐私/标定/北京时间来自 _config(环境变量 CT5_* 或 config.local.json)
 COUNT = 45
 INTERVAL = int(sys.argv[1]) if len(sys.argv) > 1 else 180
 
@@ -103,7 +103,7 @@ async def main():
         await client.start_notify(NOTIFY, handler)
         await client.write_gatt_char(WRITE, frame(0x31, randB), response=False)
         await asyncio.sleep(1.2)
-        n = datetime.datetime.now()
+        n = now()
         await client.write_gatt_char(WRITE, frame(0x03, [n.year - 1900, n.month, n.day, n.hour, n.minute, n.second]), response=False)
         await asyncio.sleep(1.2)
 
@@ -138,7 +138,7 @@ async def main():
         if not ids:
             print("没拉到数据。"); return
         max_id = ids[-1]
-        now = datetime.datetime.now()
+        anchor = now()   # 北京时间锚点;按 interval 反推各点时间
         with open(CSV_PATH, "w", newline="") as f:
             w = csv.writer(f)
             w.writerow(["time", "glucoseId", "glu_mmol", "glu_mg", "Ib", "Iw", "T", "trend"])
@@ -146,7 +146,7 @@ async def main():
                 r = all_recs[gid]
                 if r[1] <= 0:             # 仅跳过预热期 glu=0（空槽已在解析时停止，无需过滤）
                     continue
-                ts = now - datetime.timedelta(seconds=(max_id - gid) * INTERVAL)
+                ts = anchor - datetime.timedelta(seconds=(max_id - gid) * INTERVAL)
                 cal_mmol = round(r[1] * CALIB / 18, 1)   # 标定后 mmol(对齐App)
                 cal_mg = round(r[1] * CALIB)
                 w.writerow([ts.isoformat(timespec="seconds"), gid, cal_mmol, cal_mg, r[3], r[4], r[5], r[6]])

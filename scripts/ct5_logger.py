@@ -12,7 +12,7 @@ from bleak import BleakClient, BleakScanner
 WRITE = "00001002-1212-efde-1523-785feabcd123"
 NOTIFY = "00001001-1212-efde-1523-785feabcd123"
 CSV_PATH = "glucose_log.csv"   # 相对当前工作目录(在项目根目录运行)
-from _config import PHONE, CALIB
+from _config import PHONE, CALIB, now
 from _config import CIPHER as _CIPHER_CFG
 
 CIPHER = int(sys.argv[1]) if len(sys.argv) > 1 else _CIPHER_CFG
@@ -64,7 +64,7 @@ def log_csv(r):
         if new:
             w.writerow(["time", "glucoseId", "glu_mmol", "glu_mg", "Ib", "Iw", "T", "trend"])
         cal_mg = round(r["glu_mg"] * CALIB)
-        w.writerow([datetime.datetime.now().isoformat(timespec="seconds"),
+        w.writerow([now().isoformat(timespec="seconds"),
                     r["gid"], round(cal_mg / 18, 1), cal_mg, r["ib"], r["iw"], r["T"], r["trend"]])
 
 
@@ -88,7 +88,7 @@ async def main():
             if len(b) >= 15 and ok:
                 r = parse(b, CIPHER)
                 if r and 20 <= r["glu_mg"] <= 450:
-                    ts = datetime.datetime.now().strftime("%H:%M:%S")
+                    ts = now().strftime("%H:%M:%S")
                     cal_mg = round(r["glu_mg"] * CALIB)
                     print(f"[{ts}] ★ {round(cal_mg/18,1)} mmol/L ({cal_mg} mg/dL, 原始{r['glu_mg']}) "
                           f"id={r['gid']} Iw={r['iw']} Ib={r['ib']} T={r['T']}℃ trend={r['trend']}")
@@ -100,7 +100,7 @@ async def main():
         await client.start_notify(NOTIFY, handler)
         await client.write_gatt_char(WRITE, frame(0x31, randB), response=False)
         await asyncio.sleep(1.5)
-        n = datetime.datetime.now()
+        n = now()
         await client.write_gatt_char(WRITE, frame(0x03, [n.year - 1900, n.month, n.day, n.hour, n.minute, n.second]), response=False)
         print(f"握手完成,监听 {LISTEN}s (每~5分钟一帧)...")
         await asyncio.sleep(LISTEN)

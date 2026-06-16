@@ -15,6 +15,7 @@ config.local.json 示例:
 import os
 import json
 import pathlib
+import datetime
 
 _ROOT = pathlib.Path(__file__).resolve().parent.parent
 _LOCAL = _ROOT / "config.local.json"
@@ -37,6 +38,16 @@ def get(key, default):
 PHONE = str(get("phone", "13800138000"))
 CIPHER = int(get("cipher", 124))
 CALIB = float(get("calib", 1.327))
+
+# 时区:CGM 数据本身不带时间戳,由脚本打时间。固定按配置时区(默认北京 UTC+8),
+# 这样无论运行机器在哪个时区,写出的时间都是中国时间。可用 CT5_TZ_OFFSET / tz_offset 调整。
+TZ_OFFSET = float(get("tz_offset", 8))
+TZ = datetime.timezone(datetime.timedelta(hours=TZ_OFFSET))
+
+
+def now():
+    """配置时区(默认北京)的当前时间,返回 naive datetime(不带 tzinfo,保持 CSV 时间格式一致)。"""
+    return datetime.datetime.now(TZ).replace(tzinfo=None)
 
 if PHONE == "13800138000":
     print("[_config] ⚠️ 正在使用占位手机号,无法通过设备认证。"
