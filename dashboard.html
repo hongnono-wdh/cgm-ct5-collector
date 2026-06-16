@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Yuwell CT5 · 连续血糖监测</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  /* ---------- 语义化 design tokens（明/暗双主题） ---------- */
+  :root{
+    --range-low:#e5484d; --range-ok:#30a46c; --range-high:#f76b15; --range-vhigh:#e5484d;
+    --brand:#3b82f6; --brand-weak:rgba(59,130,246,.12);
+    --radius:14px; --radius-sm:10px;
+    --font:'Inter',-apple-system,"Segoe UI",Roboto,"Microsoft YaHei",sans-serif;
+    --shadow:0 1px 2px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.06);
+  }
+  [data-theme="dark"]{
+    --bg:#0b0f17; --bg-elev:#121826; --surface:#161d2b; --surface-2:#1c2536;
+    --border:#26303f; --txt:#e8edf4; --txt-2:#94a3b8; --txt-3:#64748b;
+    --grid:rgba(148,163,184,.12); --band:rgba(48,163,108,.10);
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+  }
+  [data-theme="light"]{
+    --bg:#f4f6fa; --bg-elev:#ffffff; --surface:#ffffff; --surface-2:#f7f9fc;
+    --border:#e3e8f0; --txt:#0f1b2d; --txt-2:#5a6b82; --txt-3:#8a99ad;
+    --grid:rgba(15,27,45,.07); --band:rgba(48,163,108,.09);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--txt);font-family:var(--font);-webkit-font-smoothing:antialiased}
+  body{min-height:100dvh}
+  .num{font-variant-numeric:tabular-nums}
+  /* ---------- 顶栏 ---------- */
+  header{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:14px;
+    padding:12px 22px;background:var(--bg-elev);border-bottom:1px solid var(--border)}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px}
+  .logo .dot{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--brand),#22d3ee);
+    display:grid;place-items:center}
+  .logo svg{width:15px;height:15px;color:#fff}
+  .spacer{flex:1}
+  .pill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;
+    padding:6px 12px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);color:var(--txt-2)}
+  .pill .ind{width:8px;height:8px;border-radius:50%;background:var(--txt-3)}
+  .pill.live .ind{background:var(--range-ok);box-shadow:0 0 0 3px rgba(48,163,108,.2)}
+  .pill.stale .ind{background:var(--range-high)}
+  .iconbtn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border);background:var(--surface-2);
+    color:var(--txt-2);cursor:pointer;display:grid;place-items:center}
+  .iconbtn:hover{color:var(--txt)}
+  .iconbtn svg{width:17px;height:17px}
+  /* ---------- 布局 ---------- */
+  main{max-width:1240px;margin:0 auto;padding:22px;display:grid;gap:18px;
+    grid-template-columns:340px 1fr}
+  .col{display:grid;gap:18px;align-content:start}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:20px;box-shadow:var(--shadow)}
+  .card h2{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--txt-3);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+  /* current reading hero */
+  .hero{text-align:center}
+  .hero .reading{display:flex;align-items:baseline;justify-content:center;gap:10px;margin:6px 0 2px}
+  .hero .val{font-size:76px;font-weight:700;line-height:.9;letter-spacing:-.02em}
+  .hero .unit{font-size:16px;color:var(--txt-2);font-weight:500}
+  .hero .arrow{font-size:34px;font-weight:600}
+  .hero .mg{font-size:13px;color:var(--txt-3);margin-bottom:14px}
+  .statusbadge{display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;
+    padding:7px 16px;border-radius:999px}
+  .statusbadge svg{width:15px;height:15px}
+  /* mini kpis */
+  .kpis{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .kpi{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:13px 15px}
+  .kpi .k{font-size:11.5px;color:var(--txt-3);margin-bottom:5px;display:flex;align-items:center;gap:6px}
+  .kpi .k svg{width:13px;height:13px}
+  .kpi .v{font-size:21px;font-weight:600}
+  .kpi .v small{font-size:12px;color:var(--txt-3);font-weight:500}
+  /* chart */
+  .chartcard{min-height:360px;display:flex;flex-direction:column}
+  .chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .seg{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:3px}
+  .seg button{border:0;background:transparent;color:var(--txt-2);font:inherit;font-size:12.5px;font-weight:500;
+    padding:5px 12px;border-radius:6px;cursor:pointer}
+  .seg button.on{background:var(--brand);color:#fff}
+  .canvas-wrap{position:relative;flex:1;min-height:300px}
+  /* sensor table */
+  .rows{display:grid;gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+  .row{display:flex;justify-content:space-between;align-items:center;padding:12px 15px;background:var(--surface)}
+  .row .k{font-size:13px;color:var(--txt-2)}
+  .row .v{font-size:13.5px;font-weight:600}
+  .empty{display:grid;place-items:center;height:300px;text-align:center;color:var(--txt-3);gap:10px}
+  .empty svg{width:42px;height:42px;opacity:.5}
+  .footer{grid-column:1/-1;text-align:center;color:var(--txt-3);font-size:12px;padding:4px 0 10px}
+  @media(max-width:880px){ main{grid-template-columns:1fr} .hero .val{font-size:64px} }
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><span class="dot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M3 12h4l2 6 4-14 2 8h6"/></svg></span> Yuwell CT5 <span style="color:var(--txt-3);font-weight:500">连续血糖监测</span></div>
+  <div class="spacer"></div>
+  <span class="pill" id="conn"><span class="ind"></span><span id="connt">连接中…</span></span>
+  <button class="iconbtn" id="theme" title="切换主题"><svg id="themeicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg></button>
+</header>
+
+<main>
+  <!-- 左列 -->
+  <div class="col">
+    <div class="card hero">
+      <h2>当前血糖</h2>
+      <div class="reading"><span class="val num" id="glu">--</span><span class="unit">mmol/L</span><span class="arrow" id="arrow"></span></div>
+      <div class="mg num" id="mg">-- mg/dL</div>
+      <div><span class="statusbadge" id="badge" style="background:var(--surface-2);color:var(--txt-2)">等待数据</span></div>
+    </div>
+    <div class="card">
+      <h2>关键指标</h2>
+      <div class="kpis">
+        <div class="kpi"><div class="k"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6v6l4 2"/><circle cx="12" cy="12" r="9"/></svg>目标范围内</div><div class="v num"><span id="tir">--</span><small>%</small></div></div>
+        <div class="kpi"><div class="k"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>平均血糖</div><div class="v num"><span id="avg">--</span><small>mmol/L</small></div></div>
+        <div class="kpi"><div class="k"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V5m0 14h16M8 15l3-4 3 2 4-6"/></svg>估算 A1c</div><div class="v num"><span id="gmi">--</span><small>%</small></div></div>
+        <div class="kpi"><div class="k"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7z"/></svg>波动 CV</div><div class="v num"><span id="cv">--</span><small>%</small></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>传感器状态</h2>
+      <div class="rows">
+        <div class="row"><span class="k">温度</span><span class="v num" id="temp">-- ℃</span></div>
+        <div class="row"><span class="k">工作电流 Iw</span><span class="v num" id="iw">--</span></div>
+        <div class="row"><span class="k">基线电流 Ib</span><span class="v num" id="ib">--</span></div>
+        <div class="row"><span class="k">当前序号 ID</span><span class="v num" id="gid">--</span></div>
+        <div class="row"><span class="k">数据点数</span><span class="v num" id="count">--</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 右列 -->
+  <div class="col">
+    <div class="card chartcard">
+      <div class="chart-head">
+        <h2 style="margin:0">血糖趋势</h2>
+        <div class="seg" id="seg"><button data-h="3">3h</button><button data-h="6" class="on">6h</button><button data-h="12">12h</button><button data-h="24">24h</button><button data-h="0">全部</button></div>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="chart"></canvas>
+        <div class="empty" id="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg><div>暂无血糖数据<br><span style="font-size:12px">运行采集脚本后将自动显示</span></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <h2>范围分布（TIR）</h2>
+      <div id="tirbar" style="display:flex;height:36px;border-radius:9px;overflow:hidden;border:1px solid var(--border)"></div>
+      <div id="tirlegend" style="display:flex;gap:18px;margin-top:12px;font-size:12.5px;color:var(--txt-2);flex-wrap:wrap"></div>
+    </div>
+  </div>
+  <div class="footer">数据源 glucose_log.csv · 每 30 秒自动刷新 · 目标范围 3.9–10.0 mmol/L</div>
+</main>
+
+<script>
+const LOW=3.9, HIGH=10.0, VHIGH=13.9;
+const TREND={0:"",1:"↓↓",2:"↓↓",3:"↓",4:"→",5:"↑",6:"↑↑",7:""};
+let chart, allData=[], rangeH=6;
+
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const rangeColor=v=> v<LOW?css('--range-low'): v>VHIGH?css('--range-vhigh'): v>HIGH?css('--range-high'):css('--range-ok');
+const rangeLabel=v=> v<LOW?{t:'偏低',c:css('--range-low'),i:'down'}: v>HIGH?{t:'偏高',c:css('--range-high'),i:'up'}:{t:'范围内',c:css('--range-ok'),i:'ok'};
+
+// 主题
+const themeBtn=document.getElementById('theme');
+function setTheme(t){document.documentElement.dataset.theme=t;localStorage.cgmTheme=t;
+  if(chart){applyChartColors();chart.update()}}
+themeBtn.onclick=()=>setTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+setTheme(localStorage.cgmTheme||'dark');
+
+// 目标范围带背景插件
+const bandPlugin={id:'band',beforeDatasetsDraw(c){const{ctx,chartArea:a,scales:{y}}=c;if(!y)return;
+  const y1=y.getPixelForValue(HIGH),y2=y.getPixelForValue(LOW);ctx.save();ctx.fillStyle=css('--band');
+  ctx.fillRect(a.left,Math.min(y1,y2),a.right-a.left,Math.abs(y2-y1));ctx.restore();}};
+
+function applyChartColors(){
+  chart.options.scales.x.grid.color=css('--grid');chart.options.scales.y.grid.color=css('--grid');
+  chart.options.scales.x.ticks.color=css('--txt-3');chart.options.scales.y.ticks.color=css('--txt-3');
+}
+
+async function load(){
+  try{
+    const r=await fetch('glucose_log.csv?_='+Date.now());
+    if(!r.ok) throw 0;
+    const txt=await r.text();
+    const lines=txt.trim().split(/\r?\n/).slice(1).filter(Boolean);
+    if(!lines.length){setConn(false,'无数据');return}
+    allData=lines.map(l=>{const c=l.split(',');return{t:c[0],gid:c[1],mmol:+c[2],mg:+c[3],ib:c[4],iw:c[5],T:+c[6],tr:+c[7]}});
+    render();
+  }catch(e){setConn(false,'CSV 未生成')}
+}
+function setConn(live,txt){const p=document.getElementById('conn');p.className='pill '+(live?'live':'stale');
+  document.getElementById('connt').textContent=txt}
+
+function render(){
+  const d=allData; const last=d[d.length-1];
+  // hero
+  const g=document.getElementById('glu'); g.textContent=last.mmol.toFixed(1); g.style.color=rangeColor(last.mmol);
+  document.getElementById('arrow').textContent=TREND[last.tr]||''; document.getElementById('arrow').style.color=rangeColor(last.mmol);
+  document.getElementById('mg').textContent=last.mg+' mg/dL';
+  const rl=rangeLabel(last.mmol); const b=document.getElementById('badge');
+  b.style.background=rl.c+'22'; b.style.color=rl.c;
+  b.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">${rl.i==='ok'?'<path d=\"M20 6L9 17l-5-5\"/>':rl.i==='up'?'<path d=\"M12 19V5M5 12l7-7 7 7\"/>':'<path d=\"M12 5v14M5 12l7 7 7-7\"/>'}</svg>${rl.t}`;
+  // sensor
+  document.getElementById('temp').textContent=last.T.toFixed(1)+' ℃';
+  document.getElementById('iw').textContent=last.iw; document.getElementById('ib').textContent=last.ib;
+  document.getElementById('gid').textContent=last.gid; document.getElementById('count').textContent=d.length;
+  // stats
+  const vals=d.map(x=>x.mmol); const avg=vals.reduce((a,b)=>a+b,0)/vals.length;
+  const inRange=vals.filter(v=>v>=LOW&&v<=HIGH).length, lo=vals.filter(v=>v<LOW).length, hi=vals.filter(v=>v>HIGH).length;
+  const sd=Math.sqrt(vals.reduce((a,b)=>a+(b-avg)**2,0)/vals.length);
+  document.getElementById('avg').textContent=avg.toFixed(1);
+  document.getElementById('tir').textContent=(inRange/vals.length*100).toFixed(0);
+  document.getElementById('cv').textContent=(sd/avg*100).toFixed(0);
+  document.getElementById('gmi').textContent=(3.31+0.02392*(avg*18)).toFixed(1);
+  // tir bar
+  const tot=vals.length, seg=[['偏低',lo,css('--range-low')],['范围内',inRange,css('--range-ok')],['偏高',hi,css('--range-high')]];
+  document.getElementById('tirbar').innerHTML=seg.map(s=>`<div style="width:${s[1]/tot*100}%;background:${s[2]}"></div>`).join('');
+  document.getElementById('tirlegend').innerHTML=seg.map(s=>`<span style="display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:${s[2]}"></span>${s[0]} ${(s[1]/tot*100).toFixed(0)}%</span>`).join('');
+  // recency
+  const ageMin=(Date.now()-new Date(last.t).getTime())/60000;
+  setConn(ageMin<8,'最后更新 '+last.t.replace('T',' '));
+  drawChart();
+}
+function drawChart(){
+  document.getElementById('empty').style.display=allData.length?'none':'grid';
+  let d=allData;
+  if(rangeH>0){const cut=Date.now()-rangeH*3600*1000; d=allData.filter(x=>new Date(x.t).getTime()>=cut); if(!d.length)d=allData.slice(-1)}
+  const labels=d.map(x=>x.t.slice(11,16)), vals=d.map(x=>x.mmol);
+  const ptColors=d.map(x=>rangeColor(x.mmol));
+  if(!chart){
+    chart=new Chart(document.getElementById('chart'),{type:'line',plugins:[bandPlugin],
+      data:{labels,datasets:[{data:vals,borderColor:css('--brand'),borderWidth:2,tension:.35,
+        pointRadius:d.length>120?0:3,pointBackgroundColor:ptColors,pointBorderColor:ptColors,
+        fill:false}]},
+      options:{maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.parsed.y.toFixed(1)} mmol/L`}}},
+        scales:{y:{suggestedMin:2,suggestedMax:14,grid:{color:css('--grid')},ticks:{color:css('--txt-3'),stepSize:2},title:{display:false}},
+          x:{grid:{color:css('--grid')},ticks:{color:css('--txt-3'),maxTicksLimit:10,maxRotation:0}}}}});
+  }else{
+    chart.data.labels=labels; chart.data.datasets[0].data=vals;
+    chart.data.datasets[0].pointBackgroundColor=ptColors; chart.data.datasets[0].pointBorderColor=ptColors;
+    chart.data.datasets[0].pointRadius=d.length>120?0:3; applyChartColors(); chart.update();
+  }
+}
+document.getElementById('seg').onclick=e=>{const b=e.target.closest('button');if(!b)return;
+  [...e.currentTarget.children].forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  rangeH=+b.dataset.h; drawChart();};
+
+load(); setInterval(load,30000);
+</script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# 本机产生的真实数据 / 隐私(默认不提交真实血糖数据与抓包)
+# 仓库内已有的 glucose_log.csv / raw_batches.txt / sample_data 为演示样例,
+# 若你换成自己的真实数据,请注意不要提交泄露隐私。
+*.cfa
+*.btsnoop
+*.xlsx
+*.xls
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
