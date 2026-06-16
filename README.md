@@ -1,5 +1,9 @@
 # 鱼跃 Yuwell CGM CT5 数据直读工具
 
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](LICENSE)
+[![Non-Commercial](https://img.shields.io/badge/Use-%E4%BB%85%E5%AD%A6%E4%B9%A0%C2%B7%E7%A6%81%E5%95%86%E7%94%A8-red.svg)](DISCLAIMER.md)
+[![Medical Disclaimer](https://img.shields.io/badge/%E2%9A%A0%EF%B8%8F-%E9%9D%9E%E5%8C%BB%E7%96%97%E7%94%A8%E9%80%94-orange.svg)](DISCLAIMER.md)
+
 用 Python(蓝牙 BLE)绕开官方 App,直接读取**鱼跃第五代动态血糖仪 CT5** 的血糖数据,
 解密、对齐 App 显示值,并提供一个本地监测网页面板。还附带把官方 native 标定算法
 `decodeCT`(SSN→K/R)逆向出的纯 Python 复现。
