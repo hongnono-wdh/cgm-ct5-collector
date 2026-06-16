@@ -14,6 +14,9 @@ env/
 *.xlsx
 *.xls
 
+# 本机隐私配置(真实手机号 / cipher / 标定),绝不提交
+config.local.json
+
 # 编辑器 / 系统
 .vscode/
 .idea/

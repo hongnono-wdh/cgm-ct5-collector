@@ -9,7 +9,7 @@ from bleak import BleakClient, BleakScanner
 WRITE = "00001002-1212-efde-1523-785feabcd123"
 NOTIFY = "00001001-1212-efde-1523-785feabcd123"
 OUT = "raw_batches.txt"   # 相对当前工作目录(在项目根目录运行)
-PHONE = "13800138000"
+from _config import PHONE  # 真实手机号来自环境变量 CT5_PHONE 或 config.local.json
 COUNT = 45
 
 

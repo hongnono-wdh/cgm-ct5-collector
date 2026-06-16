@@ -12,11 +12,12 @@ from bleak import BleakClient, BleakScanner
 WRITE = "00001002-1212-efde-1523-785feabcd123"
 NOTIFY = "00001001-1212-efde-1523-785feabcd123"
 CSV_PATH = "glucose_log.csv"   # 相对当前工作目录(在项目根目录运行)
-PHONE = "13800138000"
+from _config import PHONE, CALIB
+from _config import CIPHER as _CIPHER_CFG
 
-CIPHER = int(sys.argv[1]) if len(sys.argv) > 1 else 124
+CIPHER = int(sys.argv[1]) if len(sys.argv) > 1 else _CIPHER_CFG
 LISTEN = int(sys.argv[2]) if len(sys.argv) > 2 else 1800
-CALIB = 1.327   # 标定系数,对齐App显示值(见 rebuild_csv.py 注释)
+# CALIB / PHONE 来自 _config(环境变量 CT5_* 或 config.local.json)
 
 
 def derive(phone):

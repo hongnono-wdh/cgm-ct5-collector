@@ -11,7 +11,8 @@ from bleak import BleakClient, BleakScanner
 
 WRITE = "00001002-1212-efde-1523-785feabcd123"
 NOTIFY = "00001001-1212-efde-1523-785feabcd123"
-PHONE = sys.argv[1] if len(sys.argv) > 1 else "13800138000"
+from _config import PHONE as _CFG_PHONE  # 来自环境变量 CT5_PHONE 或 config.local.json
+PHONE = sys.argv[1] if len(sys.argv) > 1 else _CFG_PHONE
 
 
 def derive(p):

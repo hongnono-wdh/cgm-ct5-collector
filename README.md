@@ -90,15 +90,27 @@ yuwell-cgm/
 
 ## 三、必须按你的设备核对的 3 个参数 ⭐
 
-脚本顶部有三个常量,**同步到新机器后请核对**(它们跟人/传感器绑定):
+这三个参数跟人/设备绑定,**不再硬编码在脚本里**,而是由 `scripts/_config.py` 按
+**环境变量 `CT5_*` > 项目根 `config.local.json` > 占位默认值** 的顺序读取
+(`config.local.json` 已被 `.gitignore` 忽略,真实手机号等隐私不会进版本控制)。
 
-| 常量 | 当前值 | 含义 | 何时要改 |
-|---|---|---|---|
-| `PHONE` | `13800138000` | 绑定设备的手机号(派生认证 RandomA/B) | 换绑定手机号 |
-| `CIPHER` | `124` | 数据解密密钥(单字节) | **换发射器**几乎必变;换传感器一般不变。用 `ct5_setup.py` 重测 |
-| `CALIB` | `1.327` | 标定系数,App显示≈原始×CALIB | **每支传感器都不同**,换传感器用 `fit_calib.py` 重算 |
+| 参数 | key / 环境变量 | 默认(占位) | 含义 | 何时要改 |
+|---|---|---|---|---|
+| 手机号 | `phone` / `CT5_PHONE` | `13800138000` | 绑定设备的手机号(派生认证 RandomA/B) | 换绑定手机号 |
+| 解密密钥 | `cipher` / `CT5_CIPHER` | `124` | 数据解密密钥(单字节) | **换发射器**几乎必变;换传感器一般不变。用 `ct5_setup.py` 重测 |
+| 标定系数 | `calib` / `CT5_CALIB` | `1.327` | App显示≈原始×CALIB | **每支传感器都不同**,换传感器用 `fit_calib.py` 重算 |
 
-> 这些值写在 `ct5_fetch_all.py` / `ct5_logger.py` / `ct5_setup.py` 顶部。
+**配置方式(二选一):**
+
+```bash
+# 方式 A:在项目根新建 config.local.json(推荐,不会被提交)
+{ "phone": "1xxxxxxxxxx", "cipher": 124, "calib": 1.327 }
+
+# 方式 B:临时用环境变量(优先级最高)
+export CT5_PHONE=1xxxxxxxxxx   # Windows PowerShell: $env:CT5_PHONE="1xxxxxxxxxx"
+```
+
+> ⚠️ 占位手机号无法通过设备认证;脚本启动时若检测到占位号会给出提示。
 
 ---
 

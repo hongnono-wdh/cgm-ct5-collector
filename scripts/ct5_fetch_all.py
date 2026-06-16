@@ -11,11 +11,9 @@ from bleak import BleakClient, BleakScanner
 WRITE = "00001002-1212-efde-1523-785feabcd123"
 NOTIFY = "00001001-1212-efde-1523-785feabcd123"
 CSV_PATH = "glucose_log.csv"   # 相对当前工作目录(在项目根目录运行)
-PHONE = "13800138000"
-CIPHER = 124
+from _config import PHONE, CIPHER, CALIB  # 隐私/标定来自环境变量 CT5_* 或 config.local.json
 COUNT = 45
 INTERVAL = int(sys.argv[1]) if len(sys.argv) > 1 else 180
-CALIB = 1.327   # 标定系数: App显示值≈原始GluMG×CALIB(由App导出值线性拟合得到,r=0.993,疑似传感器K值;换传感器需重新标定)
 
 
 def derive(p):

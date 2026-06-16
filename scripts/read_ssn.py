@@ -1,7 +1,7 @@
 import asyncio, datetime
 from bleak import BleakClient, BleakScanner
 WRITE="00001002-1212-efde-1523-785feabcd123"; NOTIFY="00001001-1212-efde-1523-785feabcd123"
-PHONE="13800138000"; CIPHER=124
+from _config import PHONE, CIPHER  # 来自环境变量 CT5_* 或 config.local.json
 def derive(p):
     s=p+"0"*(12-len(p)) if len(p)<12 else p[:12]
     s="1"+s[1:] if s.startswith("0") else s
